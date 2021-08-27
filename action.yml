@@ -5,7 +5,10 @@ inputs:
     description: "GitHub event information"
     required: true
     default: "${{ github.event_name }}"
-outputs: {}
+outputs:
+  stage:
+    description: "The stage"
+    value: "${{ steps.stage.outputs.stage }}"
 runs:
   using: "composite"
   steps:
