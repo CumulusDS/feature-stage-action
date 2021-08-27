@@ -1,26 +1,38 @@
 name: 'action-template'
 description: 'description'
 inputs:
-  input:
-    description: 'description'
-    required: false
-    default: ''
-outputs:
-  result:
-    description: "results"
-    value: "${{ steps.action.outputs.result }}"
+  githubEventName:
+    description: "GitHub event information"
+    required: true
+    default: "${{ github.event_name }}"
+outputs: {}
 runs:
   using: "composite"
   steps:
-    - name: install cfn_nag_scan
-      id: install
+    - name: Determine feature stage
+      id: stage
       run: |
-        echo "::group::Title"
-        echo "some message"
+        echo "::group::Set Feature Stage"
+        if [[ "${{ inputs.githubEventName }}" == "pull_request_target" ]]; then
+          echo "Running against PR Target event!"
+          HEAD_REF=${{ github.head_ref }}
+          BRANCH=${HEAD_REF#dependabot/*/}
+        else
+          BRANCH=${GITHUB_REF#refs/heads/}
+        fi
+        echo BRANCH is $BRANCH
+        branchLower=$(echo $BRANCH | tr '[:upper:]' '[:lower:]')
+        echo branchLower is $branchLower
+        FEATURE=${branchLower//[^A-Za-z0-9]/-}
+        echo FEATURE is $FEATURE
+        if [[ $FEATURE == dependabot-npm-and-yarn-* ]]; then
+          FEATURE=${FEATURE#"dependabot-npm-and-yarn-"}
+        elif [[ $FEATURE == dependabot-github-actions-* ]]; then
+          FEATURE=${FEATURE#"dependabot-github-actions-"}
+        fi
+        STAGE=${FEATURE:0:16}
+        echo STAGE is $STAGE
+        echo "FEATURE_STAGE=$STAGE" >> $GITHUB_ENV
+        echo "::set-output name=stage::$STAGE"
         echo "::endgroup::"
-      shell: bash
-    - name: Print Output
-      id: print
-      run: |
-        echo "${{ steps.action.outputs.result }}"
       shell: bash
