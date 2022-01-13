@@ -1,17 +1,32 @@
-name: 'action-template'
-description: 'description'
+name: 'feature-stage-action'
+description: 'Determine feature stage for a given event'
 inputs:
   githubEventName:
     description: "GitHub event information"
     required: true
     default: "${{ github.event_name }}"
+  githubEventRef:
+    description: "GitHub event ref"
+    required: false
 outputs:
   stage:
     description: "The stage"
     value: "${{ steps.stage.outputs.stage }}"
+  repository:
+    description: "The Repository name"
+    value: "${{ steps.repo.outputs.repository }}"
 runs:
   using: "composite"
   steps:
+    - name: Set repository name environment variable
+      id: repo
+      run: |
+        repository=${REPOSITORY#*/}
+        echo "REPO=$repository" >> $GITHUB_ENV
+        echo "::set-output name=repository::$REPO"
+      shell: bash
+      env:
+        REPOSITORY: ${{ github.repository }}
     - name: Determine feature stage
       id: stage
       run: |
@@ -20,6 +35,10 @@ runs:
           echo "Running against PR Target event!"
           HEAD_REF=${{ github.head_ref }}
           BRANCH=${HEAD_REF#dependabot/*/}
+        elif [[ "${{ inputs.githubEventName }}" == "delete" ]]
+          echo "Running against branch delete event!"
+          EVENT_REF=${{ inputs.githubEventRef }}
+          BRANCH=${EVENT_REF#refs/heads/}
         else
           BRANCH=${GITHUB_REF#refs/heads/}
         fi
