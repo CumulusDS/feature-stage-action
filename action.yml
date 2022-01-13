@@ -35,7 +35,7 @@ runs:
           echo "Running against PR Target event!"
           HEAD_REF=${{ github.head_ref }}
           BRANCH=${HEAD_REF#dependabot/*/}
-        elif [[ "${{ inputs.githubEventName }}" == "delete" ]]
+        elif [[ "${{ inputs.githubEventName }}" == "delete" ]]; then
           echo "Running against branch delete event!"
           EVENT_REF=${{ inputs.githubEventRef }}
           BRANCH=${EVENT_REF#refs/heads/}
