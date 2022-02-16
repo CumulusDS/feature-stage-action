@@ -31,19 +31,27 @@ runs:
       id: stage
       run: |
         echo "::group::Set Feature Stage"
-        if [[ "${{ inputs.githubEventName }}" == "pull_request_target" ]]; then
-          echo "Running against PR Target event!"
-          HEAD_REF=${{ github.head_ref }}
-          BRANCH=${HEAD_REF#dependabot/*/}
-        elif [[ "${{ inputs.githubEventName }}" == "delete" ]]; then
-          echo "Running against branch delete event!"
-          EVENT_REF=${{ inputs.githubEventRef }}
-          BRANCH=${EVENT_REF#refs/heads/}
+        if [[ "${{ inputs.githubEventName }}" == "workflow_dispatch" ]]; then
+          echo "*** workflow dispatch"
+          echo BRANCH is ${{ github.event.inputs.branch }}
+          EVENT=${{ github.event.inputs.branch }}
+          branchLower=$(echo $EVENT | tr '[:upper:]' '[:lower:]')
         else
-          BRANCH=${GITHUB_REF#refs/heads/}
+          echo "*** Not workflow dispatch"
+          if [[ "${{ inputs.githubEventName }}" == "pull_request_target" ]]; then
+            echo "Running against PR Target event!"
+            HEAD_REF=${{ github.head_ref }}
+            BRANCH=${HEAD_REF#dependabot/*/}
+          elif [[ "${{ inputs.githubEventName }}" == "delete" ]]; then
+            echo "Running against branch delete event!"
+            EVENT_REF=${{ inputs.githubEventRef }}
+            BRANCH=${EVENT_REF#refs/heads/}
+          else
+            BRANCH=${GITHUB_REF#refs/heads/}
+          fi
+          echo BRANCH is $BRANCH
+          branchLower=$(echo $BRANCH | tr '[:upper:]' '[:lower:]')
         fi
-        echo BRANCH is $BRANCH
-        branchLower=$(echo $BRANCH | tr '[:upper:]' '[:lower:]')
         echo branchLower is $branchLower
         FEATURE=${branchLower//[^A-Za-z0-9]/-}
         echo FEATURE is $FEATURE
